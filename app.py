@@ -6,8 +6,8 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from langchain_experimental.text_splitter import SemanticChunker
 from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
@@ -25,22 +25,22 @@ docs_dir = (
 )
 
 # Uncomment if you need to calculate embeddings
-# loader = PyPDFDirectoryLoader(docs_dir)
-# docs = loader.load()
-# text_splitter = RecursiveCharacterTextSplitter(chunk_size=1_000, chunk_overlap=200)
-# splits = text_splitter.split_documents(docs)
+loader = PyPDFDirectoryLoader(docs_dir)
+docs = loader.load()
+text_splitter = SemanticChunker(embeddings=OllamaEmbeddings(model=EMBEDDING_MODEL))
+splits = text_splitter.split_documents(docs)
 
 persist_directory = ".chroma"
 # Uncomment if you need to calculate embeddings
-# vectorstore = Chroma.from_documents(
-#     documents=splits,
-#     embedding=OllamaEmbeddings(model=EMBEDDING_MODEL),
-#     persist_directory=persist_directory,
-# )
-vectorstore = Chroma(
-    embedding_function=OllamaEmbeddings(model=EMBEDDING_MODEL),
+vectorstore = Chroma.from_documents(
+    documents=splits,
+    embedding=OllamaEmbeddings(model=EMBEDDING_MODEL),
     persist_directory=persist_directory,
 )
+# vectorstore = Chroma(
+#     embedding_function=OllamaEmbeddings(model=EMBEDDING_MODEL),
+#     persist_directory=persist_directory,
+# )
 retriever = vectorstore.as_retriever()
 
 rag_prompt = hub.pull("rlm/rag-prompt")
@@ -72,4 +72,3 @@ while True:
             print(response)
         except Exception as e:
             print("Error:", str(e))
-
